@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Movie Theater Reservation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background-color: #e8f0fe;
+            color: #003366;
+        }
+
+        #container {
+            display: flex;
+            gap: 20px;
+        }
+
+        #left,
+        #center,
+        #right {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 91, 187, 0.1);
+        }
+
+        #left {
+            width: 20%;
+        }
+
+        #center {
+            width: 55%;
+            display: none;
+        }
+
+        #right {
+            width: 25%;
+            display: none;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #002b5b;
+        }
+
+        input,
+        button {
+            width: 100%;
+            height: 40px;
+            margin-top: 10px;
+            padding: 0 12px;
+            font-size: 14px;
+            border: 1px solid #aac9f0;
+            border-radius: 6px;
+            background-color: #f8fbff;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .seat-row {
+            display: flex;
+            margin-bottom: 6px;
+        }
+
+        .seat {
+            width: 45px;
+            height: 45px;
+            background-color: #cfe2ff;
+            margin: 4px;
+            text-align: center;
+            line-height: 45px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: transform 0.2s ease, background-color 0.2s;
+        }
+
+        .seat:hover {
+            background-color: #b6d4fe;
+        }
+
+        .seat.selected {
+            background-color: #004085;
+            color: white;
+            transform: scale(1.15);
+        }
+
+        #reservationInfo {
+            margin-bottom: 10px;
+        }
+
+        #confirmBtn {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+
+        <div id="left">
+            <h2>User Information</h2>
+            <form id="userForm">
+                <input type="text" id="name" placeholder="First Name" required />
+                <input type="text" id="surname" placeholder="Last Name" required />
+                <input type="email" id="email" placeholder="Email" required />
+                <input type="tel" id="phone" placeholder="Phone" required />
+                <input type="number" id="age" placeholder="Age" required />
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+
+        <div id="center">
+            <div id="adminPanel" style="display: none;">
+                <h2>Set Seats</h2>
+                <input type="number" id="rows" placeholder="Number of rows" min="1" />
+                <input type="number" id="cols" placeholder="Number of columns" min="1" />
+                <button id="setSeatsBtn">Set Seats</button>
+            </div>
+            <div id="seatContainer" style="margin-top: 10px;"></div>
+        </div>
+
+
+        <div id="right">
+            <h2>Reservation Details</h2>
+            <div id="reservationInfo"></div>
+            <button id="confirmBtn">Confirm</button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let selectedSeats = [];
+        let seatsSet = false;
+
+        document.getElementById("userForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const name = document.getElementById("name").value.trim();
+            const surname = document.getElementById("surname").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const phone = document.getElementById("phone").value.trim();
+            const age = parseInt(document.getElementById("age").value);
+
+            if (!name || !surname || !email || !phone || isNaN(age)) {
+                alert("Please fill all fields correctly.");
+                return;
+            }
+
+            const role = email === "admin@admin.com" ? "admin" : "user";
+            const price = age < 18 || age >= 65 ? 10 : age < 26 ? 15 : 25;
+
+            currentUser = { name, surname, email, phone, age, role, price };
+
+
+            selectedSeats = [];
+            document.getElementById("reservationInfo").innerHTML = "";
+            document.getElementById("confirmBtn").style.display = "none";
+
+            document.getElementById("center").style.display = "block";
+            document.getElementById("right").style.display = "block";
+
+            if (role === "admin") {
+                document.getElementById("adminPanel").style.display = "block";
+            } else if (!seatsSet) {
+                document.getElementById("seatContainer").innerHTML =
+                    "<p>Waiting for admin to set seats...</p>";
+            }
+
+            updateSeatTitles();
+        });
+
+        document.getElementById("setSeatsBtn").addEventListener("click", function () {
+            const rows = parseInt(document.getElementById("rows").value);
+            const cols = parseInt(document.getElementById("cols").value);
+
+            if (isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0) {
+                alert("Please enter valid numbers for rows and columns.");
+                return;
+            }
+
+            seatsSet = true;
+            generateSeats(rows, cols);
+        });
+
+
+        function generateSeats(rows, cols) {
+            const container = document.getElementById("seatContainer");
+            container.innerHTML = "";
+            selectedSeats = [];
+
+            for (let i = 0; i < rows; i++) {
+                const row = document.createElement("div");
+                row.className = "seat-row";
+
+                const rowLetter = String.fromCharCode(65 + i);
+
+                for (let j = 0; j < cols; j++) {
+                    const colNumber = j + 1;
+                    const seatLabel = `${rowLetter}${colNumber}`;
+                    const seat = document.createElement("div");
+
+                    seat.className = "seat";
+                    seat.textContent = seatLabel;
+                    seat.dataset.seatId = seatLabel;
+                    seat.title = `Price: $${currentUser.price}`;
+                    seat.addEventListener("click", () => toggleSeat(seat));
+
+                    row.appendChild(seat);
+                }
+
+                container.appendChild(row);
+            }
+
+
+            updateSeatTitles();
+        }
+
+
+        function updateSeatTitles() {
+            document.querySelectorAll(".seat").forEach((seat) => {
+                seat.title = `Price: $${currentUser?.price || "?"}`;
+            });
+        }
+
+
+        function toggleSeat(seat) {
+            const seatId = seat.dataset.seatId;
+
+            if (seat.classList.contains("selected")) {
+                seat.classList.remove("selected");
+                selectedSeats = selectedSeats.filter((id) => id !== seatId);
+            } else {
+                seat.classList.add("selected");
+                selectedSeats.push(seatId);
+            }
+
+            updateReservationInfo();
+        }
+
+
+
+        function updateReservationInfo() {
+            const info = document.getElementById("reservationInfo");
+            const confirmBtn = document.getElementById("confirmBtn");
+
+            if (selectedSeats.length > 0) {
+                confirmBtn.style.display = "block";
+            } else {
+                confirmBtn.style.display = "none";
+            }
+
+            info.innerHTML = `
+        <p><strong>Name:</strong> ${currentUser.name}</p>
+        <p><strong>Surname:</strong> ${currentUser.surname}</p>
+        <p><strong>Selected Seats:</strong> ${selectedSeats.join(", ")}</p>
+        <p><strong>Total Price:</strong> $${selectedSeats.length * currentUser.price}</p>
+      `;
+        }
+
+
+
+        document.getElementById("confirmBtn").addEventListener("click", () => {
+            alert(
+                `Reservation Confirmed!\n${currentUser.name} ${currentUser.surname}\nSeats: ${selectedSeats.join(", ")}\nTotal: $${selectedSeats.length * currentUser.price}`
+            );
+        });
+    </script>
+</body>
+
+</html>
